@@ -1,9 +1,9 @@
 CREATE TABLE movies
 (
     id          SERIAL PRIMARY KEY,
-    filmId      INTEGER NOT NULL,
-    filmName    varchar not null,
+    film_id      INTEGER,
+    film_name    varchar not null ,
     year        integer,
-    rating      integer,
+    rating      double precision,
     description varchar
 );
