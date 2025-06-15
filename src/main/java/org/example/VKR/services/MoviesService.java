@@ -25,9 +25,10 @@ public class MoviesService {
         return moviesRepository.findAll();
     }
 
-    public Movie findOne(int id) {
-        Optional<Movie> foundMovie = moviesRepository.findById(id);
-        return foundMovie.orElseThrow(MovieNotFoundException::new);
+
+
+    public Optional<Movie>  findOne(int filmId) {
+       return moviesRepository.findByFilmId(filmId);
     }
 
     @Transactional
@@ -39,7 +40,4 @@ public class MoviesService {
         moviesRepository.save(movie);
     }
 
-    public boolean movieDuplicate(int filmId) {
-        return moviesRepository.existsByFilmId(filmId);
-    }
 }

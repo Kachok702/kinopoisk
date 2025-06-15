@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
+import java.util.Optional;
 
 
 @RestController
@@ -55,40 +56,11 @@ public class MoviesController {
 
         for (JsonNode item : items) {
             try {
-                int filmId = item.path("kinopoiskId").asInt();
-
-                if(moviesService.movieDuplicate(filmId)){
-                    System.out.println("Фильм уже существует");
-                    continue;
-                }
-
-                String filmNameRu = item.path("nameRu").asText();
-                String filmNameEn = item.path("nameEn").asText();
-                String originalName = item.path("nameOriginal").asText();
-                int year = item.path("year").asInt();
-                double rating = item.path("ratingKinopoisk").asDouble();
-
-
-                Movie movie = new Movie();
-                movie.setFilmId(filmId);
-
-                if (checkName(filmNameRu)) {
-                    movie.setFilmName(filmNameRu);
-                } else if (checkName(filmNameEn)) {
-                    movie.setFilmName(filmNameEn);
-                } else {
-                    movie.setFilmName(originalName);
-                }
-
-
-                movie.setYear(year);
-                movie.setRating(rating);
-
-                movie.setDescription(getDescription(filmId));
+                Movie movie = createMovie(item);
                 moviesService.save(movie);
                 System.out.println("Сохранен фильм: " + movie.getFilmName());
 
-            Thread.sleep(200);
+                Thread.sleep(200);
             } catch (Exception e) {
                 System.err.println("Ошибка произошла на фильма с id: " + item.path("kinopoiskId"));
             }
@@ -120,6 +92,57 @@ public class MoviesController {
     private String checkDescription(String description) {
         return (description == null || description.isEmpty() || description.equalsIgnoreCase("null")) ? "" : description;
     }
+
+    @GetMapping("/{filmId}")
+    public ResponseEntity<Movie> getMovie(@PathVariable int filmId) {
+        Optional<Movie> foundMovie = moviesService.findOne(filmId);
+        if (foundMovie.isPresent()) {
+            return ResponseEntity.ok(foundMovie.get());
+        }
+
+        try {
+            String url = "https://kinopoiskapiunofficial.tech/api/v2.2/films/" + filmId;
+
+            JsonNode root = getResponse(url).getBody();
+
+            Movie movie = createMovie(root);
+
+            moviesService.save(movie);
+            System.out.println("Сохранен фильм: " + movie.getFilmName());
+            return ResponseEntity.ok(movie);
+        } catch (MovieNotFoundException | IOException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    private Movie createMovie(JsonNode item) throws IOException {
+        Movie movie = new Movie();
+        int filmId = item.path("kinopoiskId").asInt();
+
+        String filmNameRu = item.path("nameRu").asText();
+        String filmNameEn = item.path("nameEn").asText();
+        String originalName = item.path("nameOriginal").asText();
+        int year = item.path("year").asInt();
+        double rating = item.path("ratingKinopoisk").asDouble();
+
+        movie.setFilmId(filmId);
+
+        if (checkName(filmNameRu)) {
+            movie.setFilmName(filmNameRu);
+        } else if (checkName(filmNameEn)) {
+            movie.setFilmName(filmNameEn);
+        } else {
+            movie.setFilmName(originalName);
+        }
+
+
+        movie.setYear(year);
+        movie.setRating(rating);
+
+        movie.setDescription(getDescription(filmId));
+        return movie;
+    }
+
 
     @ExceptionHandler
     private ResponseEntity<MovieErrorResponse> handlerException(MovieNotFoundException e) {

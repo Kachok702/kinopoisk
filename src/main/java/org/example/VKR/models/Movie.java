@@ -13,7 +13,7 @@ public class Movie {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    @Column(name = "film_id")
+    @Column(name = "film_id", unique = true)
      private Integer filmId;
 
     @Column(name = "film_name")
