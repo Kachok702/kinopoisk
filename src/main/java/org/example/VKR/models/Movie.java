@@ -2,7 +2,6 @@ package org.example.VKR.models;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotEmpty;
-import java.util.Objects;
 
 @Entity
 @Table(name = "movies")
@@ -13,7 +12,7 @@ public class Movie {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    @Column(name = "film_id", unique = true)
+    @Column(name = "film_id", unique = true, nullable = false)
      private Integer filmId;
 
     @Column(name = "film_name")

@@ -1,5 +1,6 @@
 package org.example.VKR;
 
+import org.modelmapper.ModelMapper;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
@@ -21,4 +22,8 @@ public class VKRApplication {
 		return new RestTemplate();
 	}
 
+	@Bean
+	public ModelMapper modelMapper(){
+		return new ModelMapper();
+	}
 }
