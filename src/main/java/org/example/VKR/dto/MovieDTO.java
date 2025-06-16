@@ -6,23 +6,24 @@ import javax.validation.constraints.NotEmpty;
 
 public class MovieDTO {
 
-    @Column(name = "film_id", unique = true)
+    @Column(name = "film_id", unique = true, nullable = false)
     private Integer filmId;
 
     @Column(name = "film_name")
     @NotEmpty
     private String filmName;
 
+    @Column(name = "year")
+    private Integer year;
 
     @Column(name = "rating")
     private Double rating;
 
-
-    public int getFilmId() {
+    public Integer getFilmId() {
         return filmId;
     }
 
-    public void setFilmId(int filmId) {
+    public void setFilmId(Integer filmId) {
         this.filmId = filmId;
     }
 
@@ -34,21 +35,19 @@ public class MovieDTO {
         this.filmName = filmName;
     }
 
-    public double getRating() {
+    public Integer getYear() {
+        return year;
+    }
+
+    public void setYear(Integer year) {
+        this.year = year;
+    }
+
+    public Double getRating() {
         return rating;
     }
 
-    public void setRating(double rating) {
+    public void setRating(Double rating) {
         this.rating = rating;
-    }
-
-
-    @Override
-    public String toString() {
-        return "MovieDTO{" +
-                "filmId=" + filmId +
-                ", filmName='" + filmName + '\'' +
-                ", rating=" + rating +
-                '}';
     }
 }

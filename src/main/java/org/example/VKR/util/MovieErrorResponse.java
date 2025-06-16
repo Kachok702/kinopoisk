@@ -1,8 +1,8 @@
 package org.example.VKR.util;
 
 public class MovieErrorResponse {
-    private String message;
-    private long timestamp;
+    private final String message;
+    private final long timestamp;
 
     public MovieErrorResponse(String message, long timestamp) {
         this.message = message;
@@ -13,15 +13,7 @@ public class MovieErrorResponse {
         return message;
     }
 
-    public void setMessage(String message) {
-        this.message = message;
-    }
-
     public long getTimestamp() {
         return timestamp;
-    }
-
-    public void setTimestamp(long timestamp) {
-        this.timestamp = timestamp;
     }
 }
