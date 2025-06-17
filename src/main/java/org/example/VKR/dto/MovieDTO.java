@@ -19,11 +19,14 @@ public class MovieDTO {
     @Column(name = "rating")
     private Double rating;
 
-    public Integer getFilmId() {
+    @Column(name = "description")
+    private String description;
+
+    public int getFilmId() {
         return filmId;
     }
 
-    public void setFilmId(Integer filmId) {
+    public void setFilmId(int filmId) {
         this.filmId = filmId;
     }
 
@@ -35,19 +38,36 @@ public class MovieDTO {
         this.filmName = filmName;
     }
 
-    public Integer getYear() {
+    public int getYear() {
         return year;
     }
 
-    public void setYear(Integer year) {
+    public void setYear(int year) {
         this.year = year;
     }
 
-    public Double getRating() {
+    public double getRating() {
         return rating;
     }
 
-    public void setRating(Double rating) {
+    public void setRating(double rating) {
         this.rating = rating;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+
+    public MovieDTO(Integer filmId, String filmName, Integer year, Double rating, String description) {
+        this.filmId = filmId;
+        this.filmName = filmName;
+        this.year = year;
+        this.rating = rating;
+        this.description = description;
     }
 }

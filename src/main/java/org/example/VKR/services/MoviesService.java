@@ -3,65 +3,49 @@ package org.example.VKR.services;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import org.example.VKR.config.RestTemplateService;
 import org.example.VKR.dto.MovieDTO;
+import org.example.VKR.mapper.MovieMapper;
 import org.example.VKR.models.Movie;
 import org.example.VKR.rerpositories.MoviesRepository;
 
 import org.example.VKR.util.MovieNotFoundException;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestTemplate;
+
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
 public class MoviesService {
 
     private final MoviesRepository moviesRepository;
-    private final RestTemplate restTemplate;
-    private final ModelMapper modelMapper;
+    private final RestTemplateService restTemplateService;
+    private final MovieMapper movieMapper;
 
     private final String basicURL = "https://kinopoiskapiunofficial.tech/api/v2.2/films";
 
     @Autowired
-    public MoviesService(MoviesRepository moviesRepository, RestTemplate restTemplate, ModelMapper modelMapper) {
+    public MoviesService(MoviesRepository moviesRepository, RestTemplateService restTemplateService, MovieMapper movieMapper) {
         this.moviesRepository = moviesRepository;
-        this.restTemplate = restTemplate;
-        this.modelMapper = modelMapper;
+        this.restTemplateService = restTemplateService;
+        this.movieMapper = movieMapper;
     }
 
-    private ResponseEntity<JsonNode> getResponse(String url) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("X-API-KEY", "14088d89-fa7f-4114-acc2-8a1fe9f0baa2");
-        HttpEntity<String> entity = new HttpEntity<>(headers);
-
-        ResponseEntity<JsonNode> response = restTemplate.exchange(
-                url,
-                HttpMethod.GET,
-                entity,
-                JsonNode.class
-        );
-        return response;
-    }
 
     @Transactional
     public void saveMovieAll() {
-        JsonNode root = getResponse(basicURL).getBody();
+        JsonNode root = restTemplateService.getResponse(basicURL).getBody();
         JsonNode items = root.path("items");
 
         List<Movie> movies = new ArrayList<>();
@@ -89,17 +73,17 @@ public class MoviesService {
     }
 
     @Transactional
-    public Movie findOne(int filmId) {
+    public MovieDTO findOne(int filmId) {
         Movie movie = moviesRepository.findByFilmId(filmId);
         if (movie != null) {
-            return movie;
+            return movieMapper.toMovieDTO(movie);
         }
 
         try {
-            JsonNode root = getResponse(basicURL + "/" + filmId).getBody();
+            JsonNode root = restTemplateService.getResponse(basicURL + "/" + filmId).getBody();
             Movie newMovie = createMovie(root);
             saveMovie(newMovie);
-            return newMovie;
+            return movieMapper.toMovieDTO(newMovie);
         } catch (HttpClientErrorException.NotFound e) {
             throw new MovieNotFoundException("Фильм с id: " + filmId + " не найден на кинопоиске");
         } catch (IOException e) {
@@ -113,7 +97,7 @@ public class MoviesService {
 
         List<Movie> movies = moviesRepository.findAll(topTen).getContent();
 
-        return movies.stream().map(this::convertToMovieDTO).collect(Collectors.toList());
+        return movieMapper.toMovieDTOList(movies);
     }
 
     private Movie createMovie(JsonNode item) throws IOException {
@@ -145,7 +129,7 @@ public class MoviesService {
 
     private String getDescription(int filmId) {
 
-        JsonNode root = getResponse(basicURL + "/" + filmId).getBody();
+        JsonNode root = restTemplateService.getResponse(basicURL + "/" + filmId).getBody();
 
         String description = root.path("description").asText();
         String shortDescription = root.path("shortDescription").asText();
@@ -164,9 +148,5 @@ public class MoviesService {
         return name != null &&
                 !name.isEmpty() &&
                 !name.equalsIgnoreCase("null");
-    }
-
-    private MovieDTO convertToMovieDTO(Movie movie) {
-        return modelMapper.map(movie, MovieDTO.class);
     }
 }

@@ -2,7 +2,6 @@ package org.example.VKR.controllers;
 
 
 import org.example.VKR.dto.MovieDTO;
-import org.example.VKR.models.Movie;
 import org.example.VKR.services.MoviesService;
 import org.example.VKR.util.MovieNotFoundException;
 import org.example.VKR.util.MovieErrorResponse;
@@ -12,7 +11,6 @@ import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
 
 @RestController
 @RequestMapping("/movies")
@@ -31,10 +29,9 @@ public class MoviesController {
         return ResponseEntity.ok(HttpStatus.OK);
     }
 
-
     @GetMapping("/{filmId}")
-    public HttpEntity<Movie> getMovie(@PathVariable int filmId) {
-        Movie foundMovie = moviesService.findOne(filmId);
+    public HttpEntity<MovieDTO> getMovie(@PathVariable int filmId) {
+        MovieDTO foundMovie = moviesService.findOne(filmId);
         return ResponseEntity.ok(foundMovie);
     }
 
