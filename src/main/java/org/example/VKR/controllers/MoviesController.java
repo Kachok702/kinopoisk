@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
 import java.util.List;
 
 @RestController
@@ -24,8 +26,10 @@ public class MoviesController {
     }
 
     @GetMapping("/save")
-    public ResponseEntity<HttpStatus> saveMovieInTable() {
-        moviesService.saveMovieAll();
+    public ResponseEntity<HttpStatus> saveMovieInTable(@RequestParam (value = "startPage", defaultValue = "0")@Min(0) int startPage,
+                                                       @RequestParam (value = "totalPage", defaultValue = "0")@Min(0)@Max(5) int totalPage)
+                                                        {
+        moviesService.saveMovieAll(startPage, totalPage);
         return ResponseEntity.ok(HttpStatus.OK);
     }
 
@@ -35,11 +39,14 @@ public class MoviesController {
         return ResponseEntity.ok(foundMovie);
     }
 
-    @GetMapping("/newMovies")
-    public HttpEntity<List<MovieDTO>> getNewMove(){
-        List<MovieDTO> movies = moviesService.getTop10NewMovies();
-        return ResponseEntity.ok(movies);
+    @GetMapping("/sorted")
+    public HttpEntity<List<MovieDTO>> getSortMovieForOneParameters(@RequestParam(value = "type", defaultValue = "rating") String type,
+                                                                   @RequestParam(value = "sequence", defaultValue = "desc") String sequence,
+                                                                   @RequestParam(value = "limit", defaultValue = "10")@Min(1) @Max(100) int limit) {
+        return ResponseEntity.ok(moviesService.getSortMovies(type, sequence, limit));
     }
+
+
 
     @ExceptionHandler
     private ResponseEntity<MovieErrorResponse> handlerException(MovieNotFoundException e) {

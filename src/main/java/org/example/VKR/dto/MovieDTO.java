@@ -6,20 +6,14 @@ import javax.validation.constraints.NotEmpty;
 
 public class MovieDTO {
 
-    @Column(name = "film_id", unique = true, nullable = false)
     private Integer filmId;
 
-    @Column(name = "film_name")
-    @NotEmpty
     private String filmName;
 
-    @Column(name = "year")
     private Integer year;
 
-    @Column(name = "rating")
     private Double rating;
 
-    @Column(name = "description")
     private String description;
 
     public int getFilmId() {

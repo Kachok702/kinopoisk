@@ -12,9 +12,6 @@ import org.example.VKR.rerpositories.MoviesRepository;
 import org.example.VKR.util.MovieNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +26,7 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class MoviesService {
 
+    private final MovieServiceDTO movieServiceDTO;
     private final MoviesRepository moviesRepository;
     private final RestTemplateService restTemplateService;
     private final MovieMapper movieMapper;
@@ -36,7 +34,8 @@ public class MoviesService {
     private final String basicURL = "https://kinopoiskapiunofficial.tech/api/v2.2/films";
 
     @Autowired
-    public MoviesService(MoviesRepository moviesRepository, RestTemplateService restTemplateService, MovieMapper movieMapper) {
+    public MoviesService(MovieServiceDTO movieServiceDTO, MoviesRepository moviesRepository, RestTemplateService restTemplateService, MovieMapper movieMapper) {
+        this.movieServiceDTO = movieServiceDTO;
         this.moviesRepository = moviesRepository;
         this.restTemplateService = restTemplateService;
         this.movieMapper = movieMapper;
@@ -44,21 +43,30 @@ public class MoviesService {
 
 
     @Transactional
-    public void saveMovieAll() {
-        JsonNode root = restTemplateService.getResponse(basicURL).getBody();
-        JsonNode items = root.path("items");
+    public void saveMovieAll(int startPage, int totalPage) {
+        int endPage = totalPage == 0 ? startPage + 1 : startPage + totalPage;
 
-        List<Movie> movies = new ArrayList<>();
+                for (int page = startPage; page < endPage; page++) {
+            JsonNode root = restTemplateService.getResponse(basicURL + "?page=" + page).getBody();
+            JsonNode items = root.path("items");
 
-        for (JsonNode item : items) {
+            List<Movie> movies = new ArrayList<>();
+
+            for (JsonNode item : items) {
+                try {
+                    movies.add(createMovie(item));
+                } catch (Exception e) {
+                    System.err.println("Ошибка произошла на фильма с id: " + item.path("kinopoiskId"));
+                }
+            }
+            moviesRepository.saveAll(movies);
             try {
-                movies.add(createMovie(item));
                 Thread.sleep(300);
-            } catch (Exception e) {
-                System.err.println("Ошибка произошла на фильма с id: " + item.path("kinopoiskId"));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
         }
-        moviesRepository.saveAll(movies);
+
     }
 
     @Transactional
@@ -91,12 +99,8 @@ public class MoviesService {
         }
     }
 
-    public List<MovieDTO> getTop10NewMovies() {
-        Sort sort = Sort.by(Sort.Direction.DESC, "year");
-        Pageable topTen = PageRequest.of(0, 10, sort);
-
-        List<Movie> movies = moviesRepository.findAll(topTen).getContent();
-
+    public List<MovieDTO> getSortMovies(String type, String sequence, int limit) {
+        List<Movie> movies = movieServiceDTO.getMovies(type, sequence, limit);
         return movieMapper.toMovieDTOList(movies);
     }
 
