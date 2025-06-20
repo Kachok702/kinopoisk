@@ -9,6 +9,7 @@ import java.util.List;
 
 @Component
 public class MovieMapperImpl implements MovieMapper {
+
     @Override
     public MovieDTO toMovieDTO(Movie movie) {
         if (movie == null) {
@@ -34,6 +35,7 @@ public class MovieMapperImpl implements MovieMapper {
         for (Movie movie : movies) {
             movieDTOList.add(toMovieDTO(movie));
         }
+
         return movieDTOList;
     }
 }

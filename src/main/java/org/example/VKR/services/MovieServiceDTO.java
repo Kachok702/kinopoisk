@@ -1,16 +1,15 @@
 package org.example.VKR.services;
 
 import org.example.VKR.models.Movie;
+
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Order;
-import javax.persistence.criteria.Root;
+import javax.persistence.criteria.*;
 import java.util.List;
 
 @Service
@@ -20,35 +19,52 @@ public class MovieServiceDTO {
     @PersistenceContext
     private EntityManager entityManager;
 
+    public Page<Movie> getFilms(String field, String direction, int page, int size) {
 
-    public List<Movie> getMovies(String parameter, String sequence, int limit) {
+        check(field, direction, size);
+
+        Pageable pageable = direction.equalsIgnoreCase("asc")
+                ? PageRequest.of(page, size, Sort.by(Sort.Order.asc(field)))
+                : PageRequest.of(page, size, Sort.by(Sort.Order.desc(field)));
+
         CriteriaBuilder builder = entityManager.getCriteriaBuilder();
         CriteriaQuery<Movie> criteriaQuery = builder.createQuery(Movie.class);
-
         Root<Movie> root = criteriaQuery.from(Movie.class);
 
-        checkParameter(parameter);
-        checkLimit(limit);
-        Order order = sequence.equalsIgnoreCase("asc") ? builder.asc(root.get(parameter))
-                : builder.desc(root.get(parameter));
-
+        Order order = direction.equalsIgnoreCase("asc")
+                ? builder.asc(root.get(field))
+                : builder.desc(root.get(field));
         criteriaQuery.orderBy(order);
 
-        TypedQuery<Movie> query = entityManager.createQuery(criteriaQuery).setMaxResults(limit);
+        TypedQuery<Movie> query = entityManager.createQuery(criteriaQuery);
+        query.setFirstResult((int) pageable.getOffset());
+        query.setMaxResults(pageable.getPageSize());
 
-        return query.getResultList();
+        List<Movie> movies = query.getResultList();
+
+        CriteriaQuery<Long> countQuery = builder.createQuery(Long.class);
+        Root<Movie> countRoot = countQuery.from(Movie.class);
+        countQuery.select(builder.count(countRoot));
+
+        Long total = entityManager.createQuery(countQuery).getSingleResult();
+
+
+        return new PageImpl<>(movies, pageable, total);
     }
 
-    private void checkParameter(String sequence) {
-        List<String> correctParameter = List.of("filmId", "filmName", "year", "rating");
-        if (!correctParameter.contains(sequence)) {
-            throw new IllegalArgumentException("Incorrect type for sort " + sequence);
+    private void check(String field, String direction, int size) {
+        List<String> correctField = List.of("filmId", "filmName", "year", "rating");
+        if (!correctField.contains(field)) {
+            throw new IllegalArgumentException("Incorrect field " + field);
         }
-    }
 
-    private void checkLimit(int limit) {
-        if (limit < 1 || limit > 100) {
-            throw new IllegalArgumentException("Incorrect limit for sort: " + limit + " It's should be between 1 and 100");
+        List<String> correctDirection = List.of("asc", "desc");
+        if (!correctDirection.contains(direction)) {
+            throw new IllegalArgumentException("Incorrect direction: " + direction);
+        }
+
+        if (size < 1 || size > 100) {
+            throw new IllegalArgumentException("Incorrect limit for sort: " + size + " It's should be between 1 and 100");
         }
     }
 

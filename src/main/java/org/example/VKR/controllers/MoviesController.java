@@ -7,12 +7,13 @@ import org.example.VKR.util.MovieNotFoundException;
 import org.example.VKR.util.MovieErrorResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import org.springframework.data.domain.Page;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
-import java.util.List;
+
 
 @RestController
 @RequestMapping("/movies")
@@ -26,9 +27,8 @@ public class MoviesController {
     }
 
     @GetMapping("/save")
-    public ResponseEntity<HttpStatus> saveMovieInTable(@RequestParam (value = "startPage", defaultValue = "0")@Min(0) int startPage,
-                                                       @RequestParam (value = "totalPage", defaultValue = "0")@Min(0)@Max(5) int totalPage)
-                                                        {
+    public ResponseEntity<HttpStatus> saveMovieInTable(@RequestParam(value = "startPage", defaultValue = "1") @Min(1) int startPage,
+                                                       @RequestParam(value = "totalPage", defaultValue = "0") @Min(0) @Max(5) int totalPage) {
         moviesService.saveMovieAll(startPage, totalPage);
         return ResponseEntity.ok(HttpStatus.OK);
     }
@@ -40,12 +40,13 @@ public class MoviesController {
     }
 
     @GetMapping("/sorted")
-    public HttpEntity<List<MovieDTO>> getSortMovieForOneParameters(@RequestParam(value = "type", defaultValue = "rating") String type,
-                                                                   @RequestParam(value = "sequence", defaultValue = "desc") String sequence,
-                                                                   @RequestParam(value = "limit", defaultValue = "10")@Min(1) @Max(100) int limit) {
-        return ResponseEntity.ok(moviesService.getSortMovies(type, sequence, limit));
-    }
+    public HttpEntity<Page<MovieDTO>> getSortMovie(@RequestParam(value = "field", defaultValue = "rating") String field,
+                                                   @RequestParam(value = "direction", defaultValue = "desc") String direction,
+                                                   @RequestParam(value = "page", defaultValue = "0") @Min(0) int page,
+                                                   @RequestParam(value = "size", defaultValue = "10") @Min(1) @Max(100) int size) {
 
+        return ResponseEntity.ok(moviesService.getSortMovies(field, direction, page, size));
+    }
 
 
     @ExceptionHandler

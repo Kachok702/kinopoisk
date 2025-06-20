@@ -13,6 +13,7 @@ import org.example.VKR.util.MovieNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 
 
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
@@ -41,19 +42,21 @@ public class MoviesService {
         this.movieMapper = movieMapper;
     }
 
-
     @Transactional
     public void saveMovieAll(int startPage, int totalPage) {
         int endPage = totalPage == 0 ? startPage + 1 : startPage + totalPage;
 
-                for (int page = startPage; page < endPage; page++) {
+        for (int page = startPage; page < endPage; page++) {
             JsonNode root = restTemplateService.getResponse(basicURL + "?page=" + page).getBody();
             JsonNode items = root.path("items");
 
             List<Movie> movies = new ArrayList<>();
-
             for (JsonNode item : items) {
                 try {
+                    Movie movie = createMovie(item);
+                    if (moviesRepository.existsByFilmId(movie.getFilmId())) {
+                        continue;
+                    }
                     movies.add(createMovie(item));
                 } catch (Exception e) {
                     System.err.println("Ошибка произошла на фильма с id: " + item.path("kinopoiskId"));
@@ -66,7 +69,6 @@ public class MoviesService {
                 Thread.currentThread().interrupt();
             }
         }
-
     }
 
     @Transactional
@@ -99,12 +101,12 @@ public class MoviesService {
         }
     }
 
-    public List<MovieDTO> getSortMovies(String type, String sequence, int limit) {
-        List<Movie> movies = movieServiceDTO.getMovies(type, sequence, limit);
-        return movieMapper.toMovieDTOList(movies);
+    public Page<MovieDTO> getSortMovies(String field, String direction, int page, int size) {
+        Page<Movie> pageMovie =  movieServiceDTO.getFilms(field, direction, page, size);
+        return pageMovie.map(movieMapper::toMovieDTO);
     }
 
-    private Movie createMovie(JsonNode item) throws IOException {
+     private Movie createMovie(JsonNode item) throws IOException {
         Movie movie = new Movie();
         int filmId = item.path("kinopoiskId").asInt();
 

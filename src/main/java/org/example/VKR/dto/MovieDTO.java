@@ -1,8 +1,5 @@
 package org.example.VKR.dto;
 
-import javax.persistence.Column;
-
-import javax.validation.constraints.NotEmpty;
 
 public class MovieDTO {
 
