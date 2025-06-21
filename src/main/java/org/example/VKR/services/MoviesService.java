@@ -1,9 +1,10 @@
 package org.example.VKR.services;
 
 
-import com.fasterxml.jackson.databind.JsonNode;
-
 import org.example.VKR.config.RestTemplateService;
+import org.example.VKR.dto.Kinopoisk.Kinopoisk;
+import org.example.VKR.dto.Kinopoisk.KinopoiskItem;
+import org.example.VKR.dto.Kinopoisk.KinopoiskWithDescription;
 import org.example.VKR.dto.MovieDTO;
 import org.example.VKR.mapper.MovieMapper;
 import org.example.VKR.models.Movie;
@@ -44,22 +45,31 @@ public class MoviesService {
 
     @Transactional
     public void saveMovieAll(int startPage, int totalPage) {
+        int totalMoviesSaved = 0;
         int endPage = totalPage == 0 ? startPage + 1 : startPage + totalPage;
 
         for (int page = startPage; page < endPage; page++) {
-            JsonNode root = restTemplateService.getResponse(basicURL + "?page=" + page).getBody();
-            JsonNode items = root.path("items");
+            KinopoiskItem item = restTemplateService.getResponse(basicURL + "?page=" + page, KinopoiskItem.class).getBody();
+
+            if (item.getItems() == null || item.getItems().isEmpty()) {
+                System.err.println("Пустой список фильмов на странице: " + page);
+                continue;
+            }
 
             List<Movie> movies = new ArrayList<>();
-            for (JsonNode item : items) {
+            for (Kinopoisk root : item.getItems()) {
                 try {
-                    Movie movie = createMovie(item);
-                    if (moviesRepository.existsByFilmId(movie.getFilmId())) {
+
+                    if (moviesRepository.existsByFilmId(root.getKinopoiskId())) {
+                        System.out.println("Фильм уже существует: " + root.getKinopoiskId());
                         continue;
                     }
-                    movies.add(createMovie(item));
+                    KinopoiskWithDescription description = restTemplateService.getResponse(basicURL + "/" + root.getKinopoiskId(), KinopoiskWithDescription.class).getBody();
+                    movies.add(createMovie(description));
+                    totalMoviesSaved++;
+                    System.out.println("Добавлен фильм: " + description.getNameOriginal());
                 } catch (Exception e) {
-                    System.err.println("Ошибка произошла на фильма с id: " + item.path("kinopoiskId"));
+                    System.err.println("Ошибка произошла на фильма с id: " + root.getKinopoiskId());
                 }
             }
             moviesRepository.saveAll(movies);
@@ -69,17 +79,7 @@ public class MoviesService {
                 Thread.currentThread().interrupt();
             }
         }
-    }
-
-    @Transactional
-    public boolean saveMovie(Movie movie) {
-        if (moviesRepository.existsByFilmId(movie.getFilmId())) {
-            System.out.println("Фильм уже существует: " + movie.getFilmId());
-            return false;
-        }
-        moviesRepository.save(movie);
-        System.out.println("Сохранен фильм: " + movie.getFilmName());
-        return true;
+        System.out.println("Сохранено: " + totalMoviesSaved + " фильмов");
     }
 
     @Transactional
@@ -90,8 +90,9 @@ public class MoviesService {
         }
 
         try {
-            JsonNode root = restTemplateService.getResponse(basicURL + "/" + filmId).getBody();
-            Movie newMovie = createMovie(root);
+            KinopoiskWithDescription kinopoisk = restTemplateService.getResponse(basicURL + "/" + filmId, KinopoiskWithDescription.class).getBody();
+
+            Movie newMovie = createMovie(kinopoisk);
             saveMovie(newMovie);
             return movieMapper.toMovieDTO(newMovie);
         } catch (HttpClientErrorException.NotFound e) {
@@ -101,44 +102,46 @@ public class MoviesService {
         }
     }
 
+    @Transactional
+    public void saveMovie(Movie movie) {
+        if (moviesRepository.existsByFilmId(movie.getFilmId())) {
+            System.out.println("Фильм уже существует: " + movie.getFilmId());
+            return;
+        }
+        moviesRepository.save(movie);
+        System.out.println("Сохранен фильм: " + movie.getFilmName());
+    }
+
     public Page<MovieDTO> getSortMovies(String field, String direction, int page, int size) {
-        Page<Movie> pageMovie =  movieServiceDTO.getFilms(field, direction, page, size);
+        Page<Movie> pageMovie = movieServiceDTO.getFilms(field, direction, page, size);
         return pageMovie.map(movieMapper::toMovieDTO);
     }
 
-     private Movie createMovie(JsonNode item) throws IOException {
+    private Movie createMovie(KinopoiskWithDescription kinopoisk) throws IOException {
         Movie movie = new Movie();
-        int filmId = item.path("kinopoiskId").asInt();
+        movie.setFilmId(kinopoisk.getKinopoiskId());
 
-        String filmNameRu = item.path("nameRu").asText();
-        String filmNameEn = item.path("nameEn").asText();
-        String originalName = item.path("nameOriginal").asText();
-        int year = item.path("year").asInt();
-        double rating = item.path("ratingKinopoisk").asDouble();
+        String nameRu = kinopoisk.getNameRu();
+        String nameEn = kinopoisk.getNameEn();
+        String originalName = kinopoisk.getNameOriginal();
 
-        movie.setFilmId(filmId);
-
-        if (checkName(filmNameRu)) {
-            movie.setFilmName(filmNameRu);
-        } else if (checkName(filmNameEn)) {
-            movie.setFilmName(filmNameEn);
+        if (checkName(nameRu)) {
+            movie.setFilmName(nameRu);
+        } else if (checkName(nameEn)) {
+            movie.setFilmName(nameEn);
         } else {
             movie.setFilmName(originalName);
         }
 
-        movie.setYear(year);
-        movie.setRating(rating);
+        movie.setYear(kinopoisk.getYear());
+        movie.setRating(kinopoisk.getRatingKinopoisk());
+        movie.setDescription(getDescription(kinopoisk.getDescription(), kinopoisk.getShortDescription()));
 
-        movie.setDescription(getDescription(filmId));
+
         return movie;
     }
 
-    private String getDescription(int filmId) {
-
-        JsonNode root = restTemplateService.getResponse(basicURL + "/" + filmId).getBody();
-
-        String description = root.path("description").asText();
-        String shortDescription = root.path("shortDescription").asText();
+    private String getDescription(String description, String shortDescription) {
 
         String fullDescription = checkDescription(description) + " " + checkDescription(shortDescription);
         fullDescription = fullDescription.trim();

@@ -52,7 +52,7 @@ public class MoviesController {
     @ExceptionHandler
     private ResponseEntity<MovieErrorResponse> handlerException(MovieNotFoundException e) {
         MovieErrorResponse response = new MovieErrorResponse(
-                "Movie with this id wasn't found", System.currentTimeMillis()
+                "Movie with this id wasn't found. Problem is: " + e, System.currentTimeMillis()
         );
         return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
     }

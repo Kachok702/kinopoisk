@@ -8,7 +8,7 @@ import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface MoviesRepository extends PagingAndSortingRepository<Movie, Integer> {
+public interface MoviesRepository extends JpaRepository<Movie, Integer> {
 
     boolean existsByFilmId(int filmId);
 

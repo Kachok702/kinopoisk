@@ -8,20 +8,13 @@ import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import javax.persistence.TypedQuery;
-import javax.persistence.criteria.*;
 import java.util.List;
 
 @Service
 @Transactional(readOnly = true)
 public class MovieServiceDTO {
 
-    @PersistenceContext
-    private EntityManager entityManager;
-
-    private final MoviesRepository moviesRepository;
+      private final MoviesRepository moviesRepository;
 
     @Autowired
     public MovieServiceDTO(MoviesRepository moviesRepository) {
@@ -30,11 +23,11 @@ public class MovieServiceDTO {
 
     public Page<Movie> getFilms(String field, String direction, int page, int size) {
 
-
         check(field, direction, size);
-Pageable pageable = direction.equalsIgnoreCase("asc")
-        ? PageRequest.of(page, size, Sort.by(field).ascending())
-        : PageRequest.of(page,size,  Sort.by(field).descending());
+
+        Pageable pageable = direction.equalsIgnoreCase("asc")
+                ? PageRequest.of(page, size, Sort.by(field).ascending())
+                : PageRequest.of(page, size, Sort.by(field).descending());
 
         return moviesRepository.findAll(pageable);
     }
