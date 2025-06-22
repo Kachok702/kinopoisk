@@ -20,8 +20,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
 
 
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Service
@@ -114,7 +115,24 @@ public class MoviesService {
 
     public Page<MovieDTO> getSortMovies(String field, String direction, int page, int size) {
         Page<Movie> pageMovie = movieServiceDTO.getFilms(field, direction, page, size);
-        return pageMovie.map(movieMapper::toMovieDTO);
+        Page<MovieDTO> movies = pageMovie.map(movieMapper::toMovieDTO);
+
+        try (PrintWriter printWriter = new PrintWriter("src/main/resources/movie.xml")) {
+
+
+
+            for (MovieDTO movieDTO : movies) {
+                printWriter.println("filmId: " + movieDTO.getFilmId());
+                printWriter.println("filmName: " + movieDTO.getFilmName());
+                printWriter.println("year: " + movieDTO.getYear());
+                printWriter.println("rating: " + movieDTO.getRating());
+                printWriter.println("description: " + movieDTO.getDescription() + "\n");
+
+            }
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+        return movies;
     }
 
     private Movie createMovie(KinopoiskWithDescription kinopoisk) throws IOException {
