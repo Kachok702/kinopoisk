@@ -96,7 +96,7 @@ public class MoviesService {
             Movie newMovie = createMovie(kinopoisk);
             saveMovie(newMovie);
             return movieMapper.toMovieDTO(newMovie);
-        } catch (HttpClientErrorException.NotFound e) {
+        } catch (HttpClientErrorException e) {
             throw new MovieNotFoundException("Фильм с id: " + filmId + " не найден на кинопоиске");
         } catch (IOException e) {
             throw new MovieNotFoundException("Фильм с id: " + filmId + " не найден в таблице");
