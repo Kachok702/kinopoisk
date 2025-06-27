@@ -1,6 +1,6 @@
 package org.example.VKR.services;
 
-import org.example.VKR.config.RestTemplateService;
+import org.example.VKR.config.Rest.RestTemplateService;
 import org.example.VKR.dto.Kinopoisk.KinopoiskWithDescription;
 import org.example.VKR.dto.MovieDTO;
 import org.example.VKR.mapper.MovieMapper;
