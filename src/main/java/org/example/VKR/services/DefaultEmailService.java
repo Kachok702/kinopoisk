@@ -5,7 +5,6 @@ import org.springframework.core.io.FileSystemResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
-import org.springframework.util.ResourceUtils;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
@@ -13,15 +12,14 @@ import java.io.File;
 import java.io.FileNotFoundException;
 
 @Service
-public class DefaultEmailService implements EmailService{
+public class DefaultEmailService implements EmailService {
 
-        private final JavaMailSender emailSender;
+    private final JavaMailSender emailSender;
 
-        @Autowired
+    @Autowired
     public DefaultEmailService(JavaMailSender emailSender) {
         this.emailSender = emailSender;
     }
-
 
 
     @Override

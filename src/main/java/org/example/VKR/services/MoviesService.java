@@ -6,7 +6,6 @@ import org.example.VKR.dto.Kinopoisk.Kinopoisk;
 import org.example.VKR.dto.Kinopoisk.KinopoiskItem;
 import org.example.VKR.dto.Kinopoisk.KinopoiskWithDescription;
 import org.example.VKR.dto.MovieDTO;
-import org.example.VKR.dto.MovieListDTO;
 import org.example.VKR.mapper.MovieMapper;
 import org.example.VKR.models.Movie;
 import org.example.VKR.rerpositories.MoviesRepository;
@@ -15,19 +14,14 @@ import org.example.VKR.util.MovieNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 
 
-import org.springframework.core.io.FileSystemResource;
 import org.springframework.data.domain.Page;
 import org.springframework.jms.core.JmsTemplate;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
 
 
-import javax.mail.MessagingException;
-import javax.mail.internet.MimeMessage;
 import java.io.*;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -190,49 +184,60 @@ public class MoviesService {
 
     @Scheduled(cron = "${spring.integration.poller.cron}")
     public void getReportMovie() {
-        LocalDate current = LocalDate.now();
-        DayOfWeek dayOfWeek = current.getDayOfWeek();
+        try {
+            LocalDate current = LocalDate.now();
 
-        String genres = "";
+            DayOfWeek dayOfWeek = current.getDayOfWeek();
 
-        switch (dayOfWeek) {
-            case MONDAY -> genres = "1";
-            case TUESDAY -> genres = "2";
-            case WEDNESDAY -> genres = "3";
-            case THURSDAY -> genres = "4";
-            case FRIDAY -> genres = "5";
-            case SATURDAY -> genres = "6";
-            case SUNDAY -> genres = "7";
-        }
+            String genres = "";
 
-        int totalMovies = 0;
-        List<Movie> movies = new ArrayList<>();
+            switch (dayOfWeek) {
+                case MONDAY -> genres = "1";
+                case TUESDAY -> genres = "2";
+                case WEDNESDAY -> genres = "3";
+                case THURSDAY -> genres = "4";
+                case FRIDAY -> genres = "5";
+                case SATURDAY -> genres = "6";
+                case SUNDAY -> genres = "7";
+            }
 
-        while (totalMovies <= 50) {
-            for (int page = 0; page <= 2; page++) {
-                KinopoiskItem item = restTemplateService.getResponse(basicURL + "?genres=" + genres + "&page=" + page, KinopoiskItem.class).getBody();
+            int totalPages = 1;
+            List<Movie> movies = new ArrayList<>();
+
+            while (movies.size() < 50 && totalPages < 5) {
+                KinopoiskItem item = restTemplateService.getResponse(basicURL + "?genres=" + genres + "&page=" + totalPages, KinopoiskItem.class).getBody();
+
+                if (item == null || item.getItems() == null || item.getItems().isEmpty()) {
+                    System.err.println("Пустой список фильмов на странице: " + totalPages);
+                    break;
+                }
 
                 for (Kinopoisk root : item.getItems()) {
+                    if (movies.size() >= 50) {
+                        break;
+                    }
+
                     try {
                         KinopoiskWithDescription description = restTemplateService.getResponse(basicURL + "/" + root.getKinopoiskId(), KinopoiskWithDescription.class).getBody();
                         movies.add(createMovie(description));
-                        totalMovies++;
-
                     } catch (Exception e) {
                         System.err.println("Ошибка произошла на фильма с id: " + root.getKinopoiskId());
                     }
                 }
+
+                totalPages++;
+
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
             }
+
+            jmsTemplate.convertAndSend("movie.queue");
+        } catch (Exception e) {
+System.err.println("Ошибка ежедневной задачи. " + e);
         }
-
-        List<MovieDTO> moviesDTO = new ArrayList<>();
-
-        for (Movie movie : movies) {
-         MovieDTO movieDTO =   movieMapper.toMovieDTO(movie);
-         moviesDTO.add(movieDTO);
-        }
-
-        jmsTemplate.convertAndSend(new MovieListDTO(moviesDTO));
     }
 
 }

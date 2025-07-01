@@ -2,19 +2,21 @@ version: '3'
 services:
   activemq:
     container_name: activemq
-    image: codingpuss/activemq:5.17.2-jre-19-alpine
+    image: apache/activemq-classic:5.18.3
     ports:
-      - 8161:8161
-      - 61616:61616
-      -
+      - "8161:8161"
+      - "61616:61616"
+    environment:
+      ACTIVEMQ_ADMIN: admin
+      ACTIVEMQ_PASSWORD: admin
+      ACTIVEMQ_OPTS: -Dorg.apache.activemq.SERIALIZABLE_PACKAGES=*
+
   postgres:
     image: postgres:13
     container_name: postgres
+    ports:
+      - "5432:5432"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgresql-root-password
       POSTGRES_DB: VKR
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
