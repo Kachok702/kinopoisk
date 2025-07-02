@@ -2,10 +2,14 @@ package org.example.VKR.models;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotEmpty;
+import java.io.Serial;
+import java.io.Serializable;
 
 @Entity
 @Table(name = "movies")
-public class Movie {
+public class Movie implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     @Id
     @Column(name = "id")

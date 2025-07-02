@@ -1,17 +1,22 @@
 package org.example.VKR.config.JMS;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.VKR.models.Movie;
 import org.example.VKR.rerpositories.MoviesRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.annotation.JmsListener;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 
-@Component
+@Service
+@Transactional
 public class ConsumerMovie {
 
     private final MoviesRepository moviesRepository;
@@ -22,17 +27,30 @@ public class ConsumerMovie {
     }
 
     @JmsListener(destination = "movie.queue")
-    public void receiveMessage(List<Movie> movieList){
+    public void receiveMessage(String jsonMessage) throws JsonProcessingException {
 
-        List<Integer> filmIdList = moviesRepository.findAllFilmId();
+        ObjectMapper mapper = new ObjectMapper();
+        List<Movie> movieList = mapper.readValue(jsonMessage, new TypeReference<List<Movie>>() {
+        });
 
-        List<Movie> result = new ArrayList<>();
-
+        Map<Integer, Movie> uniqueMovies = new HashMap<>();
         for (Movie movie : movieList) {
-            if (!filmIdList.contains(movie.getFilmId())) {
-                result.add(movie);
+            uniqueMovies.putIfAbsent(movie.getFilmId(), movie);
+        }
+
+        Set<Integer> existingIds = new HashSet<>(moviesRepository.findAllFilmId());
+
+
+        List<Movie> toSave = uniqueMovies.values().stream()
+                .filter(movie -> !existingIds.contains(movie.getFilmId()))
+                .collect(Collectors.toList());
+
+        for (Movie movie : toSave) {
+            try {
+                moviesRepository.save(movie);
+            } catch (Exception e) {
+                System.err.println("Ошибка произошла на фильме: " + movie.getFilmId() + ". Ошибка: " + e);
             }
         }
-        moviesRepository.saveAll(result);
     }
 }
