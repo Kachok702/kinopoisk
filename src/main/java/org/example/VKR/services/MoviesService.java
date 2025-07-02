@@ -1,6 +1,7 @@
 package org.example.VKR.services;
 
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.VKR.config.Rest.RestTemplateService;
 import org.example.VKR.dto.Kinopoisk.Kinopoisk;
 import org.example.VKR.dto.Kinopoisk.KinopoiskItem;
@@ -37,6 +38,8 @@ public class MoviesService {
     private final RestTemplateService restTemplateService;
     private final MovieMapper movieMapper;
     private final JmsTemplate jmsTemplate;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private final String basicURL = "https://kinopoiskapiunofficial.tech/api/v2.2/films";
 
@@ -220,6 +223,7 @@ public class MoviesService {
                     try {
                         KinopoiskWithDescription description = restTemplateService.getResponse(basicURL + "/" + root.getKinopoiskId(), KinopoiskWithDescription.class).getBody();
                         movies.add(createMovie(description));
+                        Thread.sleep(300);
                     } catch (Exception e) {
                         System.err.println("Ошибка произошла на фильма с id: " + root.getKinopoiskId());
                     }
@@ -228,15 +232,16 @@ public class MoviesService {
                 totalPages++;
 
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(300);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
             }
+            String jsonMovies = objectMapper.writeValueAsString(movies);
+            jmsTemplate.convertAndSend(jsonMovies);
 
-            jmsTemplate.convertAndSend("movie.queue");
         } catch (Exception e) {
-System.err.println("Ошибка ежедневной задачи. " + e);
+            System.err.println("Ошибка ежедневной задачи. " + e);
         }
     }
 
