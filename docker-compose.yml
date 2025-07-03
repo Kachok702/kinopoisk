@@ -9,7 +9,6 @@ services:
     environment:
       ACTIVEMQ_ADMIN: admin
       ACTIVEMQ_PASSWORD: admin
-      ACTIVEMQ_WEBAPP_OPTS: -Djetty.host=0.0.0.0
       ACTIVEMQ_OPTS: -Dorg.apache.activemq.SERIALIZABLE_PACKAGES=*
 
   postgres:
