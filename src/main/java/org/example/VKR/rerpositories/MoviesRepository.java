@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Set;
 
 @Repository
 public interface MoviesRepository extends JpaRepository<Movie, Integer> {
@@ -19,5 +20,5 @@ public interface MoviesRepository extends JpaRepository<Movie, Integer> {
     Page<Movie> findAll(Pageable pageable);
 
     @Query("SELECT filmId from Movie")
-    List<Integer> findAllFilmId();
+    Set<Integer> findAllFilmId();
 }
